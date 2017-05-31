@@ -1,0 +1,32 @@
+{% extends "catalog.html" %}
+  {% block title %}
+    {% if category is defined %}
+      {{category.name}}
+    {% else %}
+      Catalog Home
+    {% endif %}
+  {% endblock %}
+  {% block items %}
+  <div class = "scrollbar" id="style-2">
+    {% if items|length == 0 %}
+      <div class="well well-sm">
+        There are no Items in this Category yet!!
+      </div>
+    {% endif %}
+    {% for item, cat in items %}
+      <a href="" class="col-lg-4 items">
+        <div class="panel panel-default">
+          <div class="panel-heading item-head">{{item.name}}</div>
+          <div class="panel-body text">
+            {{item.description[:100]}}...
+          </div>
+          <div class="panel-footer">
+            <span class="glyphicon glyphicon-tags" aria-hidden="true"></span>: {{cat.name}}
+            <br />
+            <i class="time">{{item.timestamp|datetime}}</i>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endblock %}

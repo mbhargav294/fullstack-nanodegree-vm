@@ -1,0 +1,56 @@
+{% extends "main.html" %}
+{% block content %}
+  <div class="row">
+    <div class="col-lg-3">
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <a href="{{url_for('createNewCategory')}}">
+            <div class="pull-left">
+              <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            </div>
+          </a>
+          Categories
+        </div>
+        <div class="panel-body">
+          <div class="list-group">
+            <div class = "scrollbar" id="style-2">
+              {% if categories|length == 0 %}
+                <div class="well well-sm">
+                  There are no catalogs yet!!
+                  <br />Add some on your own
+                </div>
+              {% endif %}
+              {% for c in categories %}
+                <div class="list-group-item text-ellipsis">
+                  <img src="{{url_for('static', filename='imgs/dummy.png')}}" class="profile-pic-small" />
+                  &nbsp;&nbsp;
+                  <a href="{{url_for('showItems', category_id=c.id)}}">{{c.name}}</a>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-9">
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          {% if category is defined %}
+            <a href="{{url_for('createNewItem', category_id=category.id)}}">
+              <div class="pull-left">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+              </div>
+            </a>
+              {{category.name}} <sup>{{items|length}} item(s)</sup>
+            {% else %}
+              Latest Items
+          {% endif %}
+        </div>
+        <div class="panel-body">
+          {% block items %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
