@@ -1,0 +1,24 @@
+{% extends "catalog.html" %}
+  {% block title %}
+      {{item.name}}
+  {% endblock %}
+  {% block content %}
+  <a href="{{url_for('showItems',category_id=category.id)}}">< Back to {{category.name}}..</a>
+  <div class="col-lg-12">
+    <div class="panel panel-info">
+      <div class="panel-heading">{{item.name}}</div>
+      <div class="panel-body">
+        {{item.description}}
+      </div>
+      <div class="panel-footer">
+        <div class="time pull-right">{{item.timestamp|datetime}}</div>
+        {% if item.user_id == userid %}
+          <div class="options">
+            <a href="{{url_for('editIndividualItem',category_id=category.id,item_id=item.id)}}"><span class="glyphicon glyphicon-pencil edit-item" aria-hidden="true"></span></a>
+            <a href="{{url_for('deleteIndividualItem',category_id=category.id,item_id=item.id)}}"><span class="glyphicon glyphicon-trash del-item" aria-hidden="true"></span></a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endblock %}

@@ -6,26 +6,35 @@
         <div class="panel-heading">
           <a href="{{url_for('createNewCategory')}}">
             <div class="pull-left">
-              <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+              {% if validuser is defined and validuser %}
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+              {% endif %}
             </div>
           </a>
-          Categories
+          Categories &nbsp;
+          <span class="glyphicon glyphicon-tags" aria-hidden="true"></span>
         </div>
         <div class="panel-body">
           <div class="list-group">
             <div class = "scrollbar" id="style-2">
               {% if categories|length == 0 %}
-                <div class="well well-sm">
-                  There are no catalogs yet!!
-                  <br />Add some on your own
+                <div class="col-lg-10 col-lg-offset-1">
+                  <div class="well well-sm">
+                    There are no catalogs yet!!
+                    <br />Add some on your own
+                  </div>
                 </div>
               {% endif %}
-              {% for c in categories %}
-                <div class="list-group-item text-ellipsis">
-                  <img src="{{url_for('static', filename='imgs/dummy.png')}}" class="profile-pic-small" />
+              {% for c, u in categories %}
+                <a class="list-group-item text-ellipsis" id="cat{{c.id}}"
+                   href="{{url_for('showItems', category_id=c.id)}}#cat{{c.id}}"
+                {% if category is defined and category.id == c.id %}
+                  style="background-color: #4CAF50; color: #FFFFFF;"
+                {% endif %}>
+                  <img src="{{u.picture}}" class="profile-pic-small" />
                   &nbsp;&nbsp;
-                  <a href="{{url_for('showItems', category_id=c.id)}}">{{c.name}}</a>
-                </div>
+                  {{c.name}}
+                </a>
               {% endfor %}
             </div>
           </div>
@@ -36,12 +45,18 @@
       <div class="panel panel-info">
         <div class="panel-heading">
           {% if category is defined %}
-            <a href="{{url_for('createNewItem', category_id=category.id)}}">
-              <div class="pull-left">
-                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-              </div>
-            </a>
-              {{category.name}} <sup>{{items|length}} item(s)</sup>
+            {% if(category.user_id==userid) %}
+              <a href="{{url_for('createNewItem', category_id=category.id)}}">
+                <div class="pull-left">
+                  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                </div>
+              </a>
+            {%endif%}
+            {{category.name}} <sup>{{items|length}} item(s)</sup>
+            {% if(category.user_id==userid) %}
+              <a class="glyphicon glyphicon-trash pull-right" href="{{url_for('deleteItems', category_id=category.id)}}" aria-hidden="true"></a>
+              <a class="glyphicon glyphicon-pencil pull-right" href="{{url_for('editCategory', category_id=category.id)}}" aria-hidden="true"></a>
+            {% endif %}
             {% else %}
               Latest Items
           {% endif %}

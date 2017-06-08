@@ -15,6 +15,10 @@ sup {
   color: #00A800;
 }
 
+a{
+  text-decoration: none !important;
+}
+
 .time {
   font-size: 8pt;
 }
@@ -46,8 +50,53 @@ sup {
   padding: 0 10px;
 }
 
+.glyphicon-asterisk{
+  color: #0000A8;
+  font-size: 11pt;
+}
+
+.glyphicon-trash {
+  font-size: 24pt;
+  padding: 0 10px;
+  text-decoration: none !important;
+  color: #FFFFFF !important;
+}
+
+.glyphicon-trash:hover {
+  color: #A80000 !important;
+}
+
+.glyphicon-pencil {
+  font-size: 24pt;
+  padding: 0 10px;
+  text-decoration: none !important;
+  color: #FFFFFF !important;
+}
+
+.glyphicon-pencil:hover {
+  color: #A8A800 !important;
+}
+
+
+.del-item {
+  font-size: 16pt;
+  padding: 0 10px;
+  color: #A80000 !important;
+}
+
+.edit-item {
+  font-size: 16pt;
+  padding: 0 10px;
+  color: #A8A800 !important;
+}
+
 .alert-success {
   background-color: #00A800;
+  color: #FFFFFF;
+}
+
+.alert-danger {
+  background-color: #A80000;
   color: #FFFFFF;
 }
 
@@ -95,6 +144,22 @@ sup {
   border-radius: 150px;
   -webkit-border-radius: 150px;
   -moz-border-radius: 150px;
+}
+
+.profile-pic{
+  margin: 0 10px;
+}
+
+.panel-footer{
+  min-height: 30px;
+}
+
+.profile-name{
+  color: #FFFFFF;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  margin-right: 20px;
 }
 
 .text {

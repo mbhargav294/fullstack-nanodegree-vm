@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% block title %}
+  Login
+{% endblock %}
+{% block includes %}
+  <meta http-equiv="refresh" content="5;{{url_for('HomePage')}}">
+{% endblock %}
+{% block content %}
+<div class="col-lg-12">
+  <div style="text-align: center;">
+    Successfully Logged out <br>
+    You will be redirected in 5 seconds... <br>
+    If not <a href="{{url_for('HomePage')}}">Click Here..</a>
+  </div>
+</div>
+{% endblock %}

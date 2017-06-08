@@ -1,0 +1,21 @@
+{% extends "main.html" %}
+{% block title %}
+  Search Results
+{% endblock %}
+{% block content %}
+  <h1>Showing Search Results for: {{search}}</h1>
+  <div class="col-lg-8 col-lg-offset-2">
+    <div class="col-lg-6">
+      <h3>Categories <sup>{{categories|length}} result(s)</sup></h3>
+      {% for c in categories %}
+        <a href="{{url_for('showItems', category_id=c.id)}}">{{c.name}}</a><br>
+      {% endfor %}
+    </div>
+    <div class="col-lg-6">
+      <h3>Items <sup>{{items|length}} result(s)</sup></h3>
+      {% for i, c in items %}
+        <a href="{{url_for('showIndividualItem', category_id=c.id, item_id=i.id)}}">{{i.name}}</a><br>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

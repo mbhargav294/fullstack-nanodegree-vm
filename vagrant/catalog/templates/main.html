@@ -25,20 +25,28 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Brand</a>
+          <a class="navbar-brand" href="/">Catalog Application</a>
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <form class="navbar-form navbar-right">
+          <form class="navbar-form navbar-right" method="post" action="{{url_for('HomePage')}}">
             <div class="input-group search">
-              <input type="text" class="form-control" placeholder="Search for...">
+              <input type="text" class="form-control" placeholder="Search for..." name="search">
               <span class="input-group-btn">
                 <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
               </span>
             </div>
             <!-- /input-group -->
-            <a class="btn btn-danger" href="#">Login</a>
+            {% if validuser is defined and validuser %}
+              <a class="btn btn-danger pull-right" href="{{url_for('gdisconnect')}}">Logout</a>
+              <div class="pull-right profile-name">
+                {{username}}
+              </div>
+              <img class="pull-right profile-pic-small profile-pic" src="{{userphoto}}" alt="{{username}}">
+            {% else %}
+              <a class="btn btn-danger pull-right" href="{{url_for('login')}}">Login</a>
+            {% endif %}
           </form>
         </div>
         <!-- /.navbar-collapse -->
@@ -48,15 +56,15 @@
   </header>
   <main class="container">
     <div class = 'flash'>
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-success alert-dismissible fade in" role="alert">
+            {% for category, message in messages %}
+              <div class="alert alert-{{category}} alert-dismissible fade in" role="alert">
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <strong>Success!</strong> {{message}}
+                <strong>{{message}}</strong>
               </div>
             {% endfor %}
-            {% endif %}
+          {% endif %}
         {% endwith %}
     </div>
     {% block content %}
@@ -70,4 +78,5 @@ $("div.alert").on("click", "button.close", function() {
   $(this).parent().animate({opacity: 0}, 500).hide('slow');
 });
 </script>
+{% block scripts %}{% endblock %}
 </html>
