@@ -14,6 +14,9 @@ import httplib2
 import json
 from flask import make_response
 import requests
+import user as usr
+import items as itms
+import categories as categ
 
 app = Flask(__name__)
 
@@ -24,6 +27,7 @@ APPLICATION_NAME = "Catalog Application"
 
 
 # Connect to Database and create database session
+# This web application is using postgresql hosted locally
 engine = create_engine('postgresql+psycopg2:///catalog')
 Base.metadata.bind = engine
 
@@ -34,6 +38,11 @@ session = DBSession()
 
 @app.route('/', methods=['POST', 'GET'])
 def HomePage():
+    """
+    This method is used to render the Home Page of Catalog Application
+    The get method is used to render the Page and the post method is
+    used in making the search query
+    """
     if(request.method == 'GET'):
         categories = session.query(Categories, Users).join(Users).all()
         items = session.query(Items, Categories).join(Categories)
@@ -51,14 +60,20 @@ def HomePage():
                                    categories=categories,
                                    items=items,
                                    validuser=False)
+    # This post method is used for search
     if(request.method == 'POST'):
+        """
+        This is not the best way to implement search but, it works.
+        Will implement Vector space model on Items and their description
+        for search later.
+        """
         search = request.form['search']
         if len(search) == 0:
             return redirect(url_for('HomePage'))
         else:
             likepat = "%%%s%%" % search
             categories = session.query(Categories).filter(
-                         Categories.name.like(likepat)).all()
+                         Categories.name.ilike(likepat)).all()
             items = session.query(Items, Categories).join(Categories).filter(
                     Items.cat_id == Categories.id).filter(
                     Items.name.ilike(likepat)).order_by(
@@ -71,6 +86,7 @@ def HomePage():
 
 @app.route('/login')
 def login():
+    """This is used to render the login page, only google login implemented"""
     if(request.method == 'GET'):
         if 'username' in login_session:
             return redirect(url_for('HomePage'))
@@ -83,6 +99,7 @@ def login():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """This is a redirected page from google signin"""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -132,6 +149,8 @@ def gconnect():
 
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
+
+    # Checking if the user is already logged in
     if stored_credentials is not None and gplus_id == stored_gplus_id:
         response = make_response(json.dumps(
                    'Current user is already connected.'), 200)
@@ -154,20 +173,19 @@ def gconnect():
     login_session['email'] = data['email']
 
     # See if a user exists, if it doesn't make a new one
-
-    user_id = getUserID(data['email'])
+    user_id = usr.getUserID(data['email'])
     if user_id is None:
-        user_id = createUser(login_session)
+        user_id = usr.createUser(login_session)
     login_session['user_id'] = user_id
 
     output = ''
-    output += '<h1>Welcome, '
+    output += '<h3>Welcome, '
     output += login_session['username']
-    output += '!</h1>'
+    output += '!</h3>'
     output += '<img src="'
     output += login_session['picture']
-    output += """ " style = "width: 300px;
-                    height: 300px;
+    output += """ " style = "width: 100px;
+                    height: 100px;
                     border-radius: 150px;
                     -webkit-border-radius: 150px;
                     -moz-border-radius: 150px;"> """
@@ -180,6 +198,10 @@ def gconnect():
 # DISCONNECT - Revoke a current user's token and reset their login_session
 @app.route('/gdisconnect')
 def gdisconnect():
+    """
+    Method to implement logout. Checks for validity of logged in user
+    and tries to clear their credentials from session and logout the user
+    """
     # Only disconnect a connected user.
     credentials = login_session.get('credentials')
     if credentials is None:
@@ -209,32 +231,15 @@ def gdisconnect():
         return response
 
 
-def createUser(login_session):
-    newUser = Users(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(Users).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def getUserInfo(user_id):
-    user = session.query(Users).filter_by(id=user_id).one()
-    return user
-
-
-def getUserID(email):
-    try:
-        user = session.query(Users).filter_by(email=email).one()
-        return user.id
-    except:
-        return None
-
-
 @app.route('/newcategory', methods=['POST', 'GET'])
 def createNewCategory():
+    """This method implements the Create functionality for new category"""
     try:
         if request.method == 'GET':
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 return render_template('newcategory.html',
                                        validuser=True,
@@ -243,9 +248,14 @@ def createNewCategory():
             else:
                 abort(405)
         if request.method == 'POST':
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 name = request.form['name']
                 err = False
+                # Validating the user inputs
                 if len(name) == 0:
                     flash("Category name is required", "danger")
                     err = True
@@ -257,8 +267,8 @@ def createNewCategory():
                     return render_template('newcategory.html', nametext=name)
                 newCategory = Categories(name=name,
                                          user_id=login_session['user_id'])
-                session.add(newCategory)
-                session.commit()
+                # Add the user entered input to our database
+                categ.addUpdateCategory(newCategory)
                 cname = newCategory.name
                 flash('Successfully Created a new catalog - %s' % cname,
                       "success")
@@ -267,15 +277,19 @@ def createNewCategory():
             else:
                 abort(405)
     except:
-        session.rollback()
         abort(404)
 
 
 @app.route('/category/<int:category_id>/edit', methods=['POST', 'GET'])
 def editCategory(category_id):
+    """This method implements the Edit functionality on Category name"""
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
+        category = categ.getSingleCategory(category_id)
         if request.method == 'GET':
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
@@ -289,29 +303,25 @@ def editCategory(category_id):
             else:
                 abort(405)
         if request.method == 'POST':
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
                     return redirect(url_for('HomePage'))
 
+                # Validating user input
                 name = request.form['name']
-                err = False
-                if len(name) == 0:
-                    flash("Category name is required", "danger")
-                    err = True
-                if len(name) > 30:
-                    flash("Length of category name can only be less than 30",
-                          "danger")
-                    err = True
-                if err:
+                if categ.validateCategoryInfo(name):
                     return render_template('categoryedit.html',
                                            category=category,
                                            validuser=True,
                                            username=login_session['username'],
                                            userphoto=login_session['picture'])
                 category.name = name
-                session.add(category)
-                session.commit()
+                categ.addUpdateCategory(category)
                 flash('Successfully Updated catalog - %s' % category.name,
                       "success")
                 return redirect(url_for('showItems',
@@ -319,22 +329,28 @@ def editCategory(category_id):
             else:
                 abort(405)
     except:
-        session.rollback()
         abort(404)
 
 
 @app.route('/category/<int:category_id>/')
 @app.route('/category/<int:category_id>/items/')
 def showItems(category_id):
+    """
+    Method to show all the items in any category
+    params:
+        category_id - Unique identifier for each category
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        categories = session.query(Categories, Users).join(Users).all()
-        items = session.query(Items, Categories).filter_by(
-                cat_id=category_id).join(Categories).filter(
-                Items.cat_id == Categories.id).order_by(
-                desc(Items.timestamp)).all()
+        category = categ.getSingleCategory(category_id)
+        categories = categ.getAllCategories()
+        items = itms.getAllItems(category_id)
 
+        """
+        Always check if the user is logged in before making changes to
+        to the database.
+        """
         if 'username' in login_session:
+
             return render_template('items.html',
                                    categories=categories,
                                    items=items,
@@ -355,12 +371,15 @@ def showItems(category_id):
 @app.route('/category/<int:category_id>/JSON')
 @app.route('/category/<int:category_id>/items/JSON')
 def wholeCatalogJSON(category_id):
+    """
+    This method implements RESTful service for the categories section
+    This works even if the user is not logged in
+    params:
+        category_id - Unique identifier for each category
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        items = session.query(Items).filter_by(
-                cat_id=category_id).join(Categories).filter(
-                Items.cat_id == Categories.id).order_by(
-                desc(Items.timestamp)).all()
+        category = categ.getSingleCategory(category_id)
+        items = itms.getSerialItems(category_id)
         return jsonify(CatalogName=category.name,
                        CatalogItems=[i.serialize for i in items])
     except:
@@ -369,13 +388,21 @@ def wholeCatalogJSON(category_id):
 
 @app.route('/category/<int:category_id>/item/<int:item_id>')
 def showIndividualItem(category_id, item_id):
+    """
+    This method renders the information regarding each individual item
+    params:
+        category_id - Unique identifier for each category
+        item_id - Unique identifier for each item
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        categories = session.query(Categories, Users).join(Users).all()
-        item = session.query(Items).filter_by(
-               cat_id=category_id).join(Categories).filter(
-               Items.cat_id == Categories.id).filter(Items.id == item_id).one()
+        category = categ.getSingleCategory(category_id)
+        categories = categ.getAllCategories()
+        item = itms.getSingleItem(category_id, item_id)
 
+        """
+        Always check if the user is logged in before making changes to
+        to the database.
+        """
         if 'username' in login_session:
             return render_template('iteminfo.html',
                                    item=item,
@@ -393,11 +420,15 @@ def showIndividualItem(category_id, item_id):
 
 @app.route('/category/<int:category_id>/item/<int:item_id>/JSON')
 def singleItemJSON(category_id, item_id):
+    """
+    This method implements RESTful servies for each item
+    params:
+        category_id - unique identifier for each category
+        item_id - unique identifier for each item
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        item = session.query(Items).filter_by(
-               cat_id=category_id).join(Categories).filter(
-               Items.cat_id == Categories.id).filter(Items.id == item_id).one()
+        category = categ.getSingleCategory(category_id)
+        item = itms.getSerialItem(category_id, item_id)
         return jsonify(CatalogName=category.name,
                        CatalogItem=item.serialize)
     except:
@@ -407,13 +438,22 @@ def singleItemJSON(category_id, item_id):
 @app.route('/category/<int:category_id>/item/<int:item_id>/delete',
            methods=['GET', 'POST'])
 def deleteIndividualItem(category_id, item_id):
+    """
+    This method implements the Delete operation on items
+        category_id - unique identifier for each category
+        item_id - unique identifier for each item
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        categories = session.query(Categories, Users).join(Users).all()
-        item = session.query(Items).filter_by(
-               cat_id=category_id).join(Categories).filter(
-               Items.cat_id == Categories.id).filter(Items.id == item_id).one()
+        category = categ.getSingleCategory(category_id)
+        categories = categ.getAllCategories()
+        item = itms.getSingleItem(category_id, item_id)
         if(request.method == 'GET'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            Also here we need to verify if the valid user is making the
+            changes(delete operation)
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id'] and \
                    item.user_id != login_session['user_id']:
@@ -430,32 +470,42 @@ def deleteIndividualItem(category_id, item_id):
             else:
                 abort(404)
         if(request.method == 'POST'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
                     return redirect(url_for('HomePage'))
 
-                session.delete(item)
-                session.commit()
+                itms.deleteItem(item)
                 flash("Successfully deleted %s Item" % (item.name), "success")
                 return redirect(url_for('showItems', category_id=category_id))
             else:
                 abort(404)
     except:
-        session.rollback()
         abort(404)
 
 
 @app.route('/category/<int:category_id>/item/<int:item_id>/edit',
            methods=['GET', 'POST'])
 def editIndividualItem(category_id, item_id):
+    """
+    This method implements Edit operation on individual items
+    params:
+        category_id - unique identifier for each category
+        item_id - unique identifier for each item
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        categories = session.query(Categories, Users).join(Users).all()
-        item = session.query(Items).filter_by(
-               cat_id=category_id).join(Categories).filter(
-               Items.cat_id == Categories.id).filter(Items.id == item_id).one()
+        category = categ.getSingleCategory(category_id)
+        categories = categ.getAllCategories()
+        item = itms.getSingleItem(category_id, item_id)
         if(request.method == 'GET'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id'] and \
                    item.user_id != login_session['user_id']:
@@ -473,6 +523,10 @@ def editIndividualItem(category_id, item_id):
                 flash("Cannot edit/delete other's catalog!", "danger")
                 return redirect(url_for('HomePage'))
         if(request.method == 'POST'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
@@ -480,22 +534,7 @@ def editIndividualItem(category_id, item_id):
 
                 name = request.form['name']
                 description = request.form['description']
-                err = False
-                if len(name) == 0:
-                    flash("Item name is required", "danger")
-                    err = True
-                if len(name) > 30:
-                    flash("Length of item name can only be less than 30",
-                          "danger")
-                    err = True
-                if len(description) == 0:
-                    flash("Item description is required", "danger")
-                    err = True
-                if len(description) > 5000:
-                    flash("Item description can only be less than 5000 chars.",
-                          "danger")
-                    err = True
-                if err:
+                if itms.validateItemInfo(name, description):
                     return render_template('itemedit.html',
                                            item=item,
                                            category=category,
@@ -506,8 +545,7 @@ def editIndividualItem(category_id, item_id):
                 else:
                     item.name = name
                     item.description = description
-                    session.add(item)
-                    session.commit()
+                    itms.addUpdateItem(item)
                     flash("Successfully edited %s Item" % (item.name),
                           "success")
                     return redirect(url_for('showIndividualItem',
@@ -516,16 +554,24 @@ def editIndividualItem(category_id, item_id):
             else:
                 abort(404)
     except:
-        session.rollback()
         abort(404)
 
 
 @app.route('/category/<int:category_id>/delete', methods=['GET', 'POST'])
 def deleteItems(category_id):
+    """
+    Method to clear all the category items and the category itself
+    params:
+        category_id: unique identifier for each category
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
-        items = session.query(Items).filter_by(cat_id=category.id).all()
+        category = categ.getSingleCategory(category_id)
+        items = itms.getAllItems(category_id)
         if(request.method == 'GET'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
@@ -538,30 +584,40 @@ def deleteItems(category_id):
                                        userphoto=login_session['picture'],
                                        userid=login_session['user_id'])
         if(request.method == 'POST'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
                     return redirect(url_for('HomePage'))
 
-                for item in items:
-                    session.delete(item)
-                session.delete(category)
-                session.commit()
+                for item, cat in items:
+                    itms.deleteItem(item)
+                categ.deleteCategory(category)
                 flash("Successfully deleted %s Category" % (category.name),
                       "success")
                 return redirect(url_for('HomePage'))
             else:
                 abort(404)
     except:
-        session.rollback()
         abort(404)
-
 
 @app.route('/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
 def createNewItem(category_id):
+    """
+    Method to create new item in a category.
+    params:
+        category_id - unique identifier for each category
+    """
     try:
-        category = session.query(Categories).filter_by(id=category_id).one()
+        category = categ.getSingleCategory(category_id)
         if(request.method == 'GET'):
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
@@ -577,6 +633,10 @@ def createNewItem(category_id):
                 flash("Cannot edit/delete other's catalog!", "danger")
                 return redirect(url_for('HomePage'))
         if request.method == 'POST':
+            """
+            Always check if the user is logged in before making changes to
+            to the database.
+            """
             if 'username' in login_session:
                 if category.user_id != login_session['user_id']:
                     flash("Cannot edit/delete other's catalog!", "danger")
@@ -584,22 +644,7 @@ def createNewItem(category_id):
 
                 name = request.form['name']
                 description = request.form['description']
-                err = False
-                if len(name) == 0:
-                    flash("Item name is required", "danger")
-                    err = True
-                if len(name) > 30:
-                    flash("Length of item name can only be less than 30",
-                          "danger")
-                    err = True
-                if len(description) == 0:
-                    flash("Item description is required", "danger")
-                    err = True
-                if len(description) > 5000:
-                    flash("Item description can only be less than 5000 chars.",
-                          "danger")
-                    err = True
-                if err:
+                if itms.validateItemInfo(name, description):
                     return render_template('newitem.html',
                                            category=category,
                                            itemname=name,
@@ -612,8 +657,7 @@ def createNewItem(category_id):
                                 description=description,
                                 cat_id=category_id,
                                 user_id=login_session['user_id'])
-                session.add(newItem)
-                session.commit()
+                itms.addUpdateItem(newItem)
                 flash('New Item %s Successfully Added to %s Category' %
                       (newItem.name, category.name), "success")
                 return redirect(url_for('showItems', category_id=category_id))
@@ -621,7 +665,6 @@ def createNewItem(category_id):
                 flash("Cannot edit/delete other's catalog!", "danger")
                 return redirect(url_for('HomePage'))
     except:
-        session.rollback()
         abort(404)
 
 
