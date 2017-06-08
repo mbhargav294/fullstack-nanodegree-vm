@@ -668,6 +668,10 @@ def createNewItem(category_id):
         abort(404)
 
 
+@app.route('/developers')
+def developerPage():
+    return render_template('developers.html')
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404

@@ -7,33 +7,35 @@
     {% endif %}
   {% endblock %}
   {% block items %}
-  <div class = "scrollbar" id="style-2">
-    {% if items|length == 0 %}
-      <div class="col-lg-8 col-lg-offset-2">
-        <div class="well well-sm">
-          There are no Items in this Category yet!!
-        </div>
-      </div>
-    {% endif %}
-    {% for item, cat in items %}
-      <a href="{{url_for('showIndividualItem', category_id=cat.id, item_id=item.id)}}" class="col-lg-4 items">
-        <div class="panel panel-default">
-          <div class="panel-heading item-head">
-            {{item.name}}
-            {% if category is not defined %}
-              <span class="glyphicon glyphicon-asterisk pull-right" aria-hidden="true"></span>
-            {% endif %}
-          </div>
-          <div class="panel-body text">
-            {{item.description[:100]}}...
-          </div>
-          <div class="panel-footer">
-            <span class="glyphicon glyphicon-tags" aria-hidden="true"></span>: {{cat.name}}
-            <br />
-            <i class="time">{{item.timestamp|datetime}}</i>
+  <div class="list-group">
+    <div class = "scrollbar" id="style-2">
+      {% if items|length == 0 %}
+        <div class="col-lg-8 col-lg-offset-2">
+          <div class="well well-sm">
+            There are no Items in this Category yet!!
           </div>
         </div>
-      </a>
-    {% endfor %}
+      {% endif %}
+      {% for item, cat in items %}
+        <a href="{{url_for('showIndividualItem', category_id=cat.id, item_id=item.id)}}" class="col-lg-4 items">
+          <div class="panel panel-default">
+            <div class="panel-heading item-head">
+              {{item.name}}
+              {% if category is not defined %}
+                <span class="glyphicon glyphicon-asterisk pull-right" aria-hidden="true"></span>
+              {% endif %}
+            </div>
+            <div class="panel-body text">
+              {{item.description[:100]}}...
+            </div>
+            <div class="panel-footer">
+              <span class="glyphicon glyphicon-tags" aria-hidden="true"></span>: {{cat.name}}
+              <br />
+              <i class="time">{{item.timestamp|datetime}}</i>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
   </div>
   {% endblock %}

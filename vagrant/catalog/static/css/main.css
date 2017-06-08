@@ -4,6 +4,7 @@
 
 body {
   background-image: url("../imgs/bgimg.png/");
+  margin-bottom: 50px;
 }
 
 main {
@@ -17,6 +18,17 @@ sup {
 
 a{
   text-decoration: none !important;
+}
+
+footer{
+  position:fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+.foot{
+  text-align: center;
+  background: #FFFFFF;
 }
 
 .time {

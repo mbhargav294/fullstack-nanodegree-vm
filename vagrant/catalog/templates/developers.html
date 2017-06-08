@@ -1,0 +1,80 @@
+{% extends "main.html" %}
+{% block title %}
+  Developers Catalog
+{% endblock %}
+{% block content %}
+  <div class="col-lg-12">
+    <h3>Only for developers</h3>
+  </div>
+  <div class="col-lg-12">
+    <p>
+      The catalog application website implements a RESTful endpoint.
+      Follow these instructions in order to communicate with this endpoint.
+    </p>
+  </div>
+  <div class="col-lg-6">
+    <h4>RESTful service for list of items in a category</h4>
+    <p>
+      In order to communicate with the endpoint and retrieve the JSON data
+      for all the items in any given category, first you have to know the
+      id of that pirticular category.
+      Next, you need to go to the following path in order to get the data in
+      JSON Format.
+    </p>
+    <br>
+    <strong>
+      For example if the category id is 0, then the path will be:
+    </strong>
+    <div class="well well-sm">
+      {{url_for('wholeCatalogJSON', category_id=0)}}
+    </div>
+    <pre class="well well-sm">
+      {
+        "CatalogName": "Test",
+        "CatalogItems": [
+          {
+            "description": "Test Description 1",
+            "id": 0,
+            "name": "Item 1"
+          },
+          {
+            "description": "Test Description 2",
+            "id": 1,
+            "name": "Item 2"
+          },
+          {
+            "description": "Test Description 3",
+            "id": 2,
+            "name": "Item 3"
+          }
+        ]
+      }
+    </pre>
+  </div>
+  <div class="col-lg-6">
+    <h4>RESTful service for a single item in a category</h4>
+    <p>
+      In order to communicate with the endpoint and retrieve the JSON data
+      for a single item in any given category, first you have to know the
+      id of that pirticular category and then the id of that particular item.
+      Next, you need to go to the following path in order to get the data in
+      JSON Format.
+    </p>
+    <strong>
+      For example if the category id is 0, and the item id is 0 then the path will be:
+    </strong>
+    <div class="well well-sm">
+      {{url_for('singleItemJSON', category_id=0, item_id=0)}}
+    </div>
+    <pre class="well well-sm">
+      {
+        "CatalogItem": {
+          "description": "Test Description 1",
+          "id": 0,
+          "name": "Item 1"
+        },
+        "CatalogName": "Test"
+      }
+    </pre>
+  </div>
+{% endblock %}
